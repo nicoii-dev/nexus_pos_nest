@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 
 import { EnvConfigModule } from '../env-config/env-config.module';
@@ -24,6 +25,10 @@ import { LoginAttemptsService } from './login-attempts.service';
     JwtStrategy,
     AuthRepository,
     LoginAttemptsService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
   exports: [AuthService, JwtAuthGuard],
 })

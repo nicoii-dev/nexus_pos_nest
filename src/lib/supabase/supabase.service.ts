@@ -30,4 +30,11 @@ export class SupabaseService {
   getClient(): SupabaseClient {
     return this.supabase;
   }
+
+  createAnonClient(): SupabaseClient {
+    return createClient(
+      this.envConfigService.getSupabaseUrl(),
+      this.envConfigService.getSupabaseAnonKey()
+    );
+  }
 }

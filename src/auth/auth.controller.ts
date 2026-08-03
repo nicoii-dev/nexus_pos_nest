@@ -2,16 +2,15 @@ import {
   Body,
   Controller,
   Get,
-  HttpCode,
-  HttpStatus,
   Post,
-  UseGuards,
+  UseGuards
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AuthService } from './auth.service';
-import { SigninDto, SignupDto } from './dto/auth.dto';
+import { SignupDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { Public } from './public.decorator';
 
 @ApiTags('Auth')
 @Controller({
@@ -21,15 +20,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @HttpCode(HttpStatus.OK)
-  @Post('signin')
-  @ApiOperation({ summary: 'Sign in with email and password' })
-  @ApiResponse({ status: 200, description: 'Successfully signed in' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async signin(@Body() signinDto: SigninDto) {
-    return this.authService.signIn(signinDto);
-  }
-
+  @Public()
   @Post('signup')
   @ApiOperation({ summary: 'Create a new user account' })
   @ApiResponse({ status: 201, description: 'User created successfully' })

@@ -18,10 +18,14 @@ export class CreateProductDto {
   @IsString()
   sku: string;
 
-  @ApiProperty({ example: '1234567890123', description: 'Barcode' })
-  @IsNotEmpty({ message: 'Barcode is required' })
+  @ApiProperty({
+    example: '1234567890123',
+    description: 'Barcode',
+    required: false,
+  })
+  @IsOptional()
   @IsString()
-  barcode: string;
+  barcode?: string;
 
   @ApiProperty({
     example: 'Ergonomic wireless mouse',

@@ -8,7 +8,7 @@ interface ProductRow {
   id: string;
   name: string;
   sku: string;
-  barcode: string;
+  barcode: string | null;
   description: string;
   category_id: string;
   buying_price: number;
@@ -27,7 +27,7 @@ export interface ProductResponse {
   id: string;
   name: string;
   sku: string;
-  barcode: string;
+  barcode: string | null;
   description: string;
   categoryId: string;
   buyingPrice: number;

@@ -8,14 +8,14 @@ export class AuthRepository {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async supabaseSignIn(email: string, password: string) {
-    return await this.supabaseService.getClient().auth.signInWithPassword({
+    return await this.supabaseService.createAnonClient().auth.signInWithPassword({
       email,
       password,
     });
   }
 
   async supabaseSignUp(signupDto: SignupDto) {
-    return await this.supabaseService.getClient().auth.signUp({
+    return await this.supabaseService.createAnonClient().auth.signUp({
       email: signupDto.email,
       password: signupDto.password,
       options: {
@@ -37,10 +37,10 @@ export class AuthRepository {
   }
 
   async supabaseLogout() {
-    return await this.supabaseService.getClient().auth.signOut();
+    return await this.supabaseService.createAnonClient().auth.signOut();
   }
 
   async supabaseGetAuthenticatedUser(accessToken: string) {
-    return await this.supabaseService.getClient().auth.getUser(accessToken);
+    return await this.supabaseService.createAnonClient().auth.getUser(accessToken);
   }
 }

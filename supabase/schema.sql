@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS sales (
   cashier TEXT NOT NULL,
   subtotal NUMERIC NOT NULL DEFAULT 0,
   discount NUMERIC NOT NULL DEFAULT 0,
+  total_cost NUMERIC NOT NULL DEFAULT 0,
   total NUMERIC NOT NULL DEFAULT 0,
   payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'card', 'digital')),
   status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('completed', 'pending', 'refunded')),
@@ -95,6 +96,7 @@ CREATE TABLE IF NOT EXISTS sale_items (
   product_name TEXT NOT NULL,
   quantity INTEGER NOT NULL,
   price NUMERIC NOT NULL,
+  cost NUMERIC NOT NULL DEFAULT 0,
   item_total NUMERIC NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

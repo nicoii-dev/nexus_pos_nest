@@ -6,7 +6,7 @@ import { EnvironmentVariables } from './env-config';
 @Injectable()
 export class EnvConfigService {
   constructor(
-    private readonly configService: ConfigService<EnvironmentVariables>
+    private readonly configService: ConfigService<EnvironmentVariables>,
   ) {}
 
   getNodeEnv(): string {
@@ -14,6 +14,7 @@ export class EnvConfigService {
   }
 
   getPort(): number {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return this.configService.get<number>('PORT', { infer: true })!;
   }
 
