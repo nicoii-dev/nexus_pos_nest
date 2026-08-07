@@ -62,4 +62,12 @@ export class ReportsController {
   async getPaymentMethodDistribution() {
     return this.reportsService.getPaymentMethodDistribution();
   }
+
+  @Get('/payment-methods')
+  async getPaymentMethods(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportsService.getPaymentMethods(startDate, endDate);
+  }
 }

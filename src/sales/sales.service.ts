@@ -28,6 +28,18 @@ interface ProductForCheckout {
   minimum_stock: number;
 }
 
+interface PaymentTransferRow {
+  id: string;
+  sale_id: string;
+  sale_payment_id: string | null;
+  from_payment_type: string;
+  to_payment_type: string;
+  amount: number;
+  reason: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
 @Injectable()
 export class SalesService {
   constructor(private readonly salesRepository: SalesRepository) {}
@@ -40,6 +52,13 @@ export class SalesService {
       throw salesError;
     }
 
+    const { data: transfers, error: transfersError } =
+      await this.salesRepository.findAllTransfers();
+
+    if (transfersError) {
+      throw transfersError;
+    }
+
     const salesWithItems = await Promise.all(
       sales.map(async (sale) => {
         const { data: items, error: itemsError } =
@@ -49,11 +68,21 @@ export class SalesService {
           throw itemsError;
         }
 
-        return this.buildSaleResponse(sale, items);
+        const { data: saleTransfers, error: saleTransfersError } =
+          await this.salesRepository.findTransfersBySaleId(sale.id);
+
+        if (saleTransfersError) {
+          throw saleTransfersError;
+        }
+
+        return this.buildSaleResponse(sale, items, saleTransfers ?? []);
       }),
     );
 
-    return salesWithItems;
+    return {
+      sales: salesWithItems,
+      paymentSummary: this.computePaymentSummary(sales, transfers ?? []),
+    };
   }
 
   async findOne(id: string) {
@@ -71,7 +100,14 @@ export class SalesService {
       throw itemsError;
     }
 
-    return this.buildSaleResponse(sale, items);
+    const { data: transfers, error: transfersError } =
+      await this.salesRepository.findTransfersBySaleId(id);
+
+    if (transfersError) {
+      throw transfersError;
+    }
+
+    return this.buildSaleResponse(sale, items, transfers ?? []);
   }
 
   async checkout(dto: CheckoutDto, user?: { email?: string }) {
@@ -222,6 +258,35 @@ export class SalesService {
     };
   }
 
+  private computePaymentSummary(
+    sales: Array<Record<string, any>>,
+    transfers: PaymentTransferRow[],
+  ) {
+    const summary: Record<string, number> = { cash: 0, card: 0, digital: 0 };
+
+    for (const sale of sales) {
+      const method = sale.payment_method as string;
+      if (method in summary) {
+        summary[method] += Number(sale.total) || 0;
+      }
+    }
+
+    for (const transfer of transfers) {
+      if (transfer.from_payment_type in summary) {
+        summary[transfer.from_payment_type] -= Number(transfer.amount) || 0;
+      }
+      if (transfer.to_payment_type in summary) {
+        summary[transfer.to_payment_type] += Number(transfer.amount) || 0;
+      }
+    }
+
+    for (const key of Object.keys(summary)) {
+      summary[key] = Math.round(summary[key] * 100) / 100;
+    }
+
+    return summary;
+  }
+
   private async generateTransactionNumber() {
     const now = new Date();
     const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
@@ -268,7 +333,11 @@ export class SalesService {
     }
   }
 
-  private buildSaleResponse(sale: Record<string, any>, items: SaleItemRow[]) {
+  private buildSaleResponse(
+    sale: Record<string, any>,
+    items: SaleItemRow[],
+    transfers: PaymentTransferRow[] = [],
+  ) {
     const totalCost = Number(sale.total_cost) || 0;
 
     return {
@@ -293,6 +362,16 @@ export class SalesService {
           createdAt: item.created_at,
         };
       }),
+      transfers: (transfers ?? []).map((transfer) => ({
+        id: transfer.id,
+        salePaymentId: transfer.sale_payment_id,
+        fromPaymentType: transfer.from_payment_type,
+        toPaymentType: transfer.to_payment_type,
+        amount: Number(transfer.amount),
+        reason: transfer.reason,
+        createdBy: transfer.created_by,
+        createdAt: transfer.created_at,
+      })),
       subtotal: Number(sale.subtotal),
       discount: Number(sale.discount),
       totalCost,

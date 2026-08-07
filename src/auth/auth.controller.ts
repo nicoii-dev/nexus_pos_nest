@@ -3,9 +3,11 @@ import {
   Controller,
   Get,
   Post,
+  Req,
   UseGuards
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
 
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/auth.dto';
@@ -27,6 +29,17 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   async signup(@Body() signupDto: SignupDto) {
     return this.authService.signup(signupDto);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('jwt-auth')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Current user profile' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMe(@Req() req: Request) {
+    const user = (req as Request & { user?: { id?: string } }).user;
+    return this.authService.getProfile(user?.id ?? '');
   }
 
   @Get('logout')

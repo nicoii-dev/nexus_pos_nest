@@ -101,6 +101,19 @@ CREATE TABLE IF NOT EXISTS sale_items (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Payment Transfers
+CREATE TABLE IF NOT EXISTS payment_transfers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sale_id UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+  sale_payment_id UUID,
+  from_payment_type TEXT NOT NULL CHECK (from_payment_type IN ('cash', 'card', 'digital')),
+  to_payment_type TEXT NOT NULL CHECK (to_payment_type IN ('cash', 'card', 'digital')),
+  amount NUMERIC NOT NULL CHECK (amount > 0),
+  reason TEXT,
+  created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Settings (single row)
 CREATE TABLE IF NOT EXISTS settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -129,6 +142,8 @@ CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status);
 CREATE INDEX IF NOT EXISTS idx_sales_payment_method ON sales(payment_method);
 CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id);
 CREATE INDEX IF NOT EXISTS idx_sale_items_product ON sale_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transfers_sale ON payment_transfers(sale_id);
+CREATE INDEX IF NOT EXISTS idx_payment_transfers_created_at ON payment_transfers(created_at);
 
 -- ============================================
 -- ROW LEVEL SECURITY (RLS)
@@ -141,6 +156,7 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sale_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_transfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
 -- Allow all authenticated users to read
@@ -151,6 +167,7 @@ CREATE POLICY "Allow authenticated read products" ON products FOR SELECT USING (
 CREATE POLICY "Allow authenticated read inventory_movements" ON inventory_movements FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow authenticated read sales" ON sales FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow authenticated read sale_items" ON sale_items FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated read payment_transfers" ON payment_transfers FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow authenticated read settings" ON settings FOR SELECT USING (auth.role() = 'authenticated');
 
 -- Allow service role full access (for API)
@@ -161,6 +178,7 @@ CREATE POLICY "Service role full access products" ON products FOR ALL USING (aut
 CREATE POLICY "Service role full access inventory_movements" ON inventory_movements FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access sales" ON sales FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access sale_items" ON sale_items FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "Service role full access payment_transfers" ON payment_transfers FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access settings" ON settings FOR ALL USING (auth.role() = 'service_role');
 
 -- ============================================

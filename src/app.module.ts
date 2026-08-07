@@ -14,6 +14,7 @@ import { EnvironmentVariables, envSchema } from './env-config/env-config';
 import { EnvConfigModule } from './env-config/env-config.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { SupabaseModule } from './lib/supabase/supabase.module';
+import { PaymentTransfersModule } from './payment-transfers/payment-transfers.module';
 import { ProductsModule } from './products/products.module';
 import { ReportsModule } from './reports/reports.module';
 import { SalesModule } from './sales/sales.module';
@@ -54,6 +55,7 @@ import { SettingsModule } from './settings/settings.module';
     ProductsModule,
     InventoryModule,
     SalesModule,
+    PaymentTransfersModule,
     ReportsModule,
     SettingsModule,
   ],

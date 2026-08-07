@@ -31,6 +31,22 @@ export class SalesRepository {
       .eq('sale_id', saleId);
   }
 
+  async findTransfersBySaleId(saleId: string) {
+    return await this.supabaseService
+      .getClient()
+      .from('payment_transfers')
+      .select('*')
+      .eq('sale_id', saleId)
+      .order('created_at', { ascending: false });
+  }
+
+  async findAllTransfers() {
+    return await this.supabaseService
+      .getClient()
+      .from('payment_transfers')
+      .select('*');
+  }
+
   async findProductForCheckout(productId: string) {
     return await this.supabaseService
       .getClient()

@@ -276,4 +276,36 @@ export class ReportsService {
 
     return Object.entries(grouped).map(([name, value]) => ({ name, value }));
   }
+
+  async getPaymentMethods(startDate?: string, endDate?: string) {
+    const now = new Date();
+    const start = startDate ?? new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const end = endDate ?? now.toISOString();
+
+    const sales = await this.reportsRepository.getSalesByDateRange(start, end);
+    const salesData = sales.data ?? [];
+
+    const grouped: Record<string, { count: number; revenue: number }> = {};
+    for (const sale of salesData) {
+      const method = sale.payment_method ?? 'Unknown';
+      if (!grouped[method]) {
+        grouped[method] = { count: 0, revenue: 0 };
+      }
+      grouped[method].count += 1;
+      grouped[method].revenue += Number(sale.total) || 0;
+    }
+
+    const totalCount = Object.values(grouped).reduce((sum, g) => sum + g.count, 0);
+    const totalRevenue = Object.values(grouped).reduce((sum, g) => sum + g.revenue, 0);
+
+    return Object.entries(grouped)
+      .sort(([, a], [, b]) => b.revenue - a.revenue)
+      .map(([name, value]) => ({
+        name,
+        value: value.count,
+        revenue: Math.round(value.revenue * 100) / 100,
+        countPercentage: totalCount > 0 ? Math.round((value.count / totalCount) * 10000) / 100 : 0,
+        revenuePercentage: totalRevenue > 0 ? Math.round((value.revenue / totalRevenue) * 10000) / 100 : 0,
+      }));
+  }
 }
