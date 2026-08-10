@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migration:new": "npx supabase migration new",
     "db:push": "npx supabase db push",
+    "db:reset": "bash scripts/reset-db.sh",
     "seed:users": "ts-node -r tsconfig-paths/register src/database/seeds/user.seed.ts",
     "seed:categories": "ts-node -r tsconfig-paths/register src/database/seeds/category.seed.ts"
   },

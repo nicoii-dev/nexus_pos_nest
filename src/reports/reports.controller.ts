@@ -40,6 +40,11 @@ export class ReportsController {
     return this.reportsService.getTopSellingProducts(limit ? parseInt(limit, 10) : 10);
   }
 
+  @Get('/top-products')
+  async getTopProducts(@Query('limit') limit?: string) {
+    return this.reportsService.getTopSellingProducts(limit ? parseInt(limit, 10) : 10);
+  }
+
   @Get('/best-categories')
   async getBestCategories() {
     return this.reportsService.getBestCategories();
