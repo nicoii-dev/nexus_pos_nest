@@ -9,7 +9,9 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
@@ -51,13 +53,23 @@ export class CheckoutDto {
   @ApiProperty({
     example: 'cash',
     description: 'Payment method',
-    enum: ['cash', 'card', 'digital'],
+    enum: ['cash', 'card', 'digital', 'credit'],
   })
   @IsNotEmpty({ message: 'Payment method is required' })
-  @IsEnum(['cash', 'card', 'digital'], {
-    message: 'Payment method must be cash, card, or digital',
+  @IsEnum(['cash', 'card', 'digital', 'credit'], {
+    message: 'Payment method must be cash, card, digital, or credit',
   })
-  paymentMethod: 'cash' | 'card' | 'digital';
+  paymentMethod: 'cash' | 'card' | 'digital' | 'credit';
+
+  @ApiProperty({
+    example: 'ca111111-1111-1111-1111-111111111111',
+    description: 'Customer ID (required for credit sales)',
+    required: false,
+  })
+  @ValidateIf((dto: CheckoutDto) => dto.paymentMethod === 'credit')
+  @IsNotEmpty({ message: 'Customer is required for credit sales' })
+  @IsUUID(undefined, { message: 'Customer ID must be a valid UUID' })
+  customerId?: string;
 
   @ApiProperty({
     example: 'Jane Doe',

@@ -168,6 +168,18 @@ export class SalesService {
     );
     const discount = dto.discount ?? 0;
     const total = subtotal - discount;
+
+    if (dto.customerId) {
+      const { data: customer, error: customerError } =
+        await this.salesRepository.findCustomerById(dto.customerId);
+
+      if (customerError || !customer) {
+        throw new NotFoundException(
+          `Customer with ID "${dto.customerId}" not found`,
+        );
+      }
+    }
+
     const transactionNumber = await this.generateTransactionNumber();
     const cashier = dto.cashier ?? user?.email ?? 'Cashier';
 
@@ -175,6 +187,7 @@ export class SalesService {
       await this.salesRepository.createSale({
         transaction_number: transactionNumber,
         cashier,
+        customer_id: dto.customerId ?? null,
         subtotal,
         discount,
         total_cost: totalCost,
@@ -262,7 +275,12 @@ export class SalesService {
     sales: Array<Record<string, any>>,
     transfers: PaymentTransferRow[],
   ) {
-    const summary: Record<string, number> = { cash: 0, card: 0, digital: 0 };
+    const summary: Record<string, number> = {
+      cash: 0,
+      card: 0,
+      digital: 0,
+      credit: 0,
+    };
 
     for (const sale of sales) {
       const method = sale.payment_method as string;
@@ -344,6 +362,17 @@ export class SalesService {
       id: sale.id,
       transactionNumber: sale.transaction_number,
       cashier: sale.cashier,
+      customer: sale.customers
+        ? {
+            id: sale.customers.id,
+            firstName: sale.customers.first_name,
+            lastName: sale.customers.last_name,
+            fullName: `${sale.customers.first_name} ${sale.customers.last_name}`.trim(),
+            phone: sale.customers.phone,
+            address: sale.customers.address,
+            remarks: sale.customers.remarks,
+          }
+        : null,
       items: (items ?? []).map((item) => {
         const quantity = Number(item.quantity);
         const price = Number(item.price);

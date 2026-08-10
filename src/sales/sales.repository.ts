@@ -10,7 +10,7 @@ export class SalesRepository {
     return await this.supabaseService
       .getClient()
       .from('sales')
-      .select('*')
+      .select('*, customers(id, first_name, last_name, phone, address, remarks)')
       .order('created_at', { ascending: false });
   }
 
@@ -18,8 +18,17 @@ export class SalesRepository {
     return await this.supabaseService
       .getClient()
       .from('sales')
-      .select('*')
+      .select('*, customers(id, first_name, last_name, phone, address, remarks)')
       .eq('id', id)
+      .single();
+  }
+
+  async findCustomerById(customerId: string) {
+    return await this.supabaseService
+      .getClient()
+      .from('customers')
+      .select('id')
+      .eq('id', customerId)
       .single();
   }
 
@@ -69,7 +78,7 @@ export class SalesRepository {
       .getClient()
       .from('sales')
       .insert(payload)
-      .select()
+      .select('*, customers(id, first_name, last_name, phone, address, remarks)')
       .single();
   }
 

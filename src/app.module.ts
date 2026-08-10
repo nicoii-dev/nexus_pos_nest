@@ -10,6 +10,7 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { LoginAttemptsService } from './auth/login-attempts.service';
 import { BranchesModule } from './branches/branches.module';
 import { CategoriesModule } from './categories/categories.module';
+import { CustomersModule } from './customers/customers.module';
 import { EnvironmentVariables, envSchema } from './env-config/env-config';
 import { EnvConfigModule } from './env-config/env-config.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -51,6 +52,7 @@ import { SettingsModule } from './settings/settings.module';
     SupabaseModule,
     AuthModule,
     BranchesModule,
+    CustomersModule,
     CategoriesModule,
     ProductsModule,
     InventoryModule,

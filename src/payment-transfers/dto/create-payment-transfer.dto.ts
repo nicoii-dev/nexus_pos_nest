@@ -30,24 +30,24 @@ export class CreatePaymentTransferDto {
   @ApiProperty({
     example: 'card',
     description: 'Source payment type',
-    enum: ['cash', 'card', 'digital'],
+    enum: ['cash', 'card', 'digital', 'credit'],
   })
   @IsNotEmpty({ message: 'From payment type is required' })
-  @IsEnum(['cash', 'card', 'digital'], {
-    message: 'From payment type must be cash, card, or digital',
+  @IsEnum(['cash', 'card', 'digital', 'credit'], {
+    message: 'From payment type must be cash, card, digital, or credit',
   })
-  fromPaymentType: 'cash' | 'card' | 'digital';
+  fromPaymentType: 'cash' | 'card' | 'digital' | 'credit';
 
   @ApiProperty({
     example: 'cash',
     description: 'Destination payment type',
-    enum: ['cash', 'card', 'digital'],
+    enum: ['cash', 'card', 'digital', 'credit'],
   })
   @IsNotEmpty({ message: 'To payment type is required' })
-  @IsEnum(['cash', 'card', 'digital'], {
-    message: 'To payment type must be cash, card, or digital',
+  @IsEnum(['cash', 'card', 'digital', 'credit'], {
+    message: 'To payment type must be cash, card, digital, or credit',
   })
-  toPaymentType: 'cash' | 'card' | 'digital';
+  toPaymentType: 'cash' | 'card' | 'digital' | 'credit';
 
   @ApiProperty({ example: 5000, description: 'Amount transferred' })
   @IsNotEmpty({ message: 'Amount is required' })

@@ -52,6 +52,15 @@ export class CreateSaleDto {
   cashier: string;
 
   @ApiProperty({
+    example: 'ca111111-1111-1111-1111-111111111111',
+    description: 'Customer ID (required for credit sales)',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @ApiProperty({
     type: [SaleItemDto],
     description: 'Sale items',
   })
@@ -78,13 +87,13 @@ export class CreateSaleDto {
   @ApiProperty({
     example: 'cash',
     description: 'Payment method',
-    enum: ['cash', 'card', 'digital'],
+    enum: ['cash', 'card', 'digital', 'credit'],
   })
   @IsNotEmpty({ message: 'Payment method is required' })
-  @IsEnum(['cash', 'card', 'digital'], {
-    message: 'Payment method must be cash, card, or digital',
+  @IsEnum(['cash', 'card', 'digital', 'credit'], {
+    message: 'Payment method must be cash, card, digital, or credit',
   })
-  paymentMethod: 'cash' | 'card' | 'digital';
+  paymentMethod: 'cash' | 'card' | 'digital' | 'credit';
 
   @ApiProperty({
     example: 'completed',

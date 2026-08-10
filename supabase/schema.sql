@@ -33,6 +33,18 @@ CREATE TABLE IF NOT EXISTS branches (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Customers
+CREATE TABLE IF NOT EXISTS customers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  phone TEXT,
+  address TEXT,
+  remarks TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Categories
 CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -78,11 +90,12 @@ CREATE TABLE IF NOT EXISTS sales (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   transaction_number TEXT NOT NULL UNIQUE,
   cashier TEXT NOT NULL,
+  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
   subtotal NUMERIC NOT NULL DEFAULT 0,
   discount NUMERIC NOT NULL DEFAULT 0,
   total_cost NUMERIC NOT NULL DEFAULT 0,
   total NUMERIC NOT NULL DEFAULT 0,
-  payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'card', 'digital')),
+  payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'card', 'digital', 'credit')),
   status TEXT NOT NULL DEFAULT 'completed' CHECK (status IN ('completed', 'pending', 'refunded')),
   date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -106,8 +119,8 @@ CREATE TABLE IF NOT EXISTS payment_transfers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   sale_id UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
   sale_payment_id UUID,
-  from_payment_type TEXT NOT NULL CHECK (from_payment_type IN ('cash', 'card', 'digital')),
-  to_payment_type TEXT NOT NULL CHECK (to_payment_type IN ('cash', 'card', 'digital')),
+  from_payment_type TEXT NOT NULL CHECK (from_payment_type IN ('cash', 'card', 'digital', 'credit')),
+  to_payment_type TEXT NOT NULL CHECK (to_payment_type IN ('cash', 'card', 'digital', 'credit')),
   amount NUMERIC NOT NULL CHECK (amount > 0),
   reason TEXT,
   created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
@@ -142,6 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_sales_status ON sales(status);
 CREATE INDEX IF NOT EXISTS idx_sales_payment_method ON sales(payment_method);
 CREATE INDEX IF NOT EXISTS idx_sale_items_sale ON sale_items(sale_id);
 CREATE INDEX IF NOT EXISTS idx_sale_items_product ON sale_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_sales_customer ON sales(customer_id);
 CREATE INDEX IF NOT EXISTS idx_payment_transfers_sale ON payment_transfers(sale_id);
 CREATE INDEX IF NOT EXISTS idx_payment_transfers_created_at ON payment_transfers(created_at);
 
@@ -151,6 +165,7 @@ CREATE INDEX IF NOT EXISTS idx_payment_transfers_created_at ON payment_transfers
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
@@ -162,6 +177,7 @@ ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 -- Allow all authenticated users to read
 CREATE POLICY "Allow authenticated read profiles" ON profiles FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow authenticated read branches" ON branches FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated read customers" ON customers FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow authenticated read categories" ON categories FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow authenticated read products" ON products FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Allow authenticated read inventory_movements" ON inventory_movements FOR SELECT USING (auth.role() = 'authenticated');
@@ -173,6 +189,7 @@ CREATE POLICY "Allow authenticated read settings" ON settings FOR SELECT USING (
 -- Allow service role full access (for API)
 CREATE POLICY "Service role full access profiles" ON profiles FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access branches" ON branches FOR ALL USING (auth.role() = 'service_role');
+CREATE POLICY "Service role full access customers" ON customers FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access categories" ON categories FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access products" ON products FOR ALL USING (auth.role() = 'service_role');
 CREATE POLICY "Service role full access inventory_movements" ON inventory_movements FOR ALL USING (auth.role() = 'service_role');
@@ -229,16 +246,24 @@ INSERT INTO products (id, name, sku, barcode, description, category_id, buying_p
   ('da666666-6666-6666-6666-666666666666', 'Tissue Paper 3-ply', 'TSP-3PL-001', '1234567904', 'Solo 3-ply Tissue Box 150 sheets', 'a6666666-6666-6666-6666-666666666666', 65, 89, 75, 20, 'box', 'in_stock')
 ON CONFLICT (id) DO NOTHING;
 
+-- Default customers
+INSERT INTO customers (id, first_name, last_name, phone, address, remarks) VALUES
+  ('ca111111-1111-1111-1111-111111111111', 'Maria', 'Santos', '+63 917 111 2222', '123 Ayala Ave, Makati City', 'Regular customer'),
+  ('ca222222-2222-2222-2222-222222222222', 'Juan', 'Dela Cruz', '+63 918 333 4444', '456 Bonifacio Global City, Taguig', NULL),
+  ('ca333333-3333-3333-3333-333333333333', 'Ana', 'Reyes', '+63 919 555 6666', '789 Tomas Morato Ave, QC', 'Prefers email receipt'),
+  ('ca444444-4444-4444-4444-444444444444', 'Pedro', 'Garcia', '+63 920 777 8888', NULL, NULL)
+ON CONFLICT (id) DO NOTHING;
+
 -- Default sales
-INSERT INTO sales (id, transaction_number, cashier, subtotal, discount, total, payment_method, status, date) VALUES
-  ('e1111111-1111-1111-1111-111111111111', 'TXN-20260710-001', 'Jane Cashier', 63100, 0, 63100, 'card', 'completed', '2026-07-10T10:30:00'),
-  ('e2222222-2222-2222-2222-222222222222', 'TXN-20260710-002', 'Jane Cashier', 1509, 50, 1459, 'cash', 'completed', '2026-07-10T11:15:00'),
-  ('e3333333-3333-3333-3333-333333333333', 'TXN-20260710-003', 'Mark Cashier', 54990, 0, 54990, 'digital', 'completed', '2026-07-10T13:00:00'),
-  ('e4444444-4444-4444-4444-444444444444', 'TXN-20260709-001', 'Jane Cashier', 645, 0, 645, 'cash', 'completed', '2026-07-09T14:30:00'),
-  ('e5555555-5555-5555-5555-555555555555', 'TXN-20260709-002', 'Mark Cashier', 69990, 2000, 67990, 'card', 'completed', '2026-07-09T15:45:00'),
-  ('e6666666-6666-6666-6666-666666666666', 'TXN-20260708-001', 'Jane Cashier', 1070, 70, 1000, 'cash', 'completed', '2026-07-08T09:20:00'),
-  ('e7777777-7777-7777-7777-777777777777', 'TXN-20260708-002', 'Mark Cashier', 115, 0, 115, 'digital', 'refunded', '2026-07-08T10:00:00'),
-  ('e8888888-8888-8888-8888-888888888888', 'TXN-20260707-001', 'Jane Cashier', 63168, 0, 63168, 'card', 'completed', '2026-07-07T16:00:00')
+INSERT INTO sales (id, transaction_number, cashier, customer_id, subtotal, discount, total, payment_method, status, date) VALUES
+  ('e1111111-1111-1111-1111-111111111111', 'TXN-20260710-001', 'Jane Cashier', 'ca111111-1111-1111-1111-111111111111', 63100, 0, 63100, 'card', 'completed', '2026-07-10T10:30:00'),
+  ('e2222222-2222-2222-2222-222222222222', 'TXN-20260710-002', 'Jane Cashier', NULL, 1509, 50, 1459, 'cash', 'completed', '2026-07-10T11:15:00'),
+  ('e3333333-3333-3333-3333-333333333333', 'TXN-20260710-003', 'Mark Cashier', 'ca222222-2222-2222-2222-222222222222', 54990, 0, 54990, 'digital', 'completed', '2026-07-10T13:00:00'),
+  ('e4444444-4444-4444-4444-444444444444', 'TXN-20260709-001', 'Jane Cashier', NULL, 645, 0, 645, 'cash', 'completed', '2026-07-09T14:30:00'),
+  ('e5555555-5555-5555-5555-555555555555', 'TXN-20260709-002', 'Mark Cashier', 'ca333333-3333-3333-3333-333333333333', 69990, 2000, 67990, 'card', 'completed', '2026-07-09T15:45:00'),
+  ('e6666666-6666-6666-6666-666666666666', 'TXN-20260708-001', 'Jane Cashier', NULL, 1070, 70, 1000, 'cash', 'completed', '2026-07-08T09:20:00'),
+  ('e7777777-7777-7777-7777-777777777777', 'TXN-20260708-002', 'Mark Cashier', 'ca444444-4444-4444-4444-444444444444', 115, 0, 115, 'digital', 'refunded', '2026-07-08T10:00:00'),
+  ('e8888888-8888-8888-8888-888888888888', 'TXN-20260707-001', 'Jane Cashier', NULL, 63168, 0, 63168, 'card', 'completed', '2026-07-07T16:00:00')
 ON CONFLICT (id) DO NOTHING;
 
 -- Default sale items
@@ -273,6 +298,7 @@ $$ language 'plpgsql';
 
 -- Triggers for updated_at
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_branches_updated_at BEFORE UPDATE ON branches FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
